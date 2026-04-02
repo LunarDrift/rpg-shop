@@ -36,7 +36,7 @@ func main() {
 	mux.HandleFunc("GET /items", server.handlerGetItems)
 	mux.HandleFunc("GET /items/{item_id}", server.handlerGetItemByID)
 	mux.HandleFunc("POST /items/buy/{item_id}", server.handlerBuyItem)
-	mux.HandleFunc("POST /items/restock/{item_id}", server.handlerRestockItem)
+	mux.HandleFunc("PATCH /items/restock/{item_id}", server.handlerRestockItem)
 	mux.HandleFunc("DELETE /items/{item_id}", server.handlerDeleteItemByID)
 
 	httpServer := http.Server{

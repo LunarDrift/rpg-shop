@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -48,6 +49,8 @@ func main() {
 			os.Exit(1)
 		}
 		buyItem(os.Args[2])
+	case "restock":
+		restockItem(os.Args[2], os.Args[3])
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
@@ -99,18 +102,72 @@ func buyItem(idx string) {
 	resp, err := http.Post(baseURL+"/items/buy/"+items[idxInt-1].ID.String(), "application/json", nil)
 	if err != nil {
 		log.Fatal("Could not reach shop:", err)
-		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		var errResp map[string]string
-		json.NewDecoder(resp.Body).Decode(&errResp)
-		fmt.Println(Red+"Purchase failed:"+Reset, errResp["error"])
+	if checkResponseError(resp, "Purchase failed") {
 		return
 	}
 
 	var item Item
 	json.NewDecoder(resp.Body).Decode(&item)
 	fmt.Printf("You purchased %s for %d gold!\n", item.Name, item.Price)
+}
+
+func restockItem(idx string, quantity string) {
+	itemsResp, err := http.Get(baseURL + "/items")
+	if err != nil {
+		log.Fatal("Could not reach shop:", err)
+	}
+	defer itemsResp.Body.Close()
+	var items []Item
+	json.NewDecoder(itemsResp.Body).Decode(&items)
+
+	idxInt, err := strconv.Atoi(idx)
+	if err != nil {
+		fmt.Println("Please enter a valid number")
+		os.Exit(1)
+	}
+	if idxInt < 1 || idxInt > len(items) {
+		fmt.Println("Invalid item number")
+		os.Exit(1)
+	}
+	qtyInt, err := strconv.Atoi(quantity)
+	if err != nil {
+		fmt.Println("Please enter a valid number")
+		os.Exit(1)
+	}
+
+	body := strings.NewReader(fmt.Sprintf(`{"quantity": %d}`, qtyInt))
+	req, err := http.NewRequest("PATCH", baseURL+"/items/restock/"+items[idxInt-1].ID.String(), body)
+	if err != nil {
+		log.Fatal("Error making request:", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("Error sending request", err)
+	}
+	defer resp.Body.Close()
+
+	if checkResponseError(resp, "Restock failed") {
+		return
+	}
+
+	var item Item
+	json.NewDecoder(resp.Body).Decode(&item)
+
+	fmt.Printf("Restocked: "+Bold+Blue+"%-20s"+Reset+"  (qty: %d)\n", item.Name, item.Quantity)
+}
+
+func checkResponseError(r *http.Response, errMsg string) bool {
+	if r.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		json.NewDecoder(r.Body).Decode(&errResp)
+		fmt.Println(Red+errMsg+":"+Reset, errResp.Error)
+		return true
+	}
+	return false
 }
