@@ -5,13 +5,20 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/LunarDrift/rpg-shop/internal/database"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	connStr := "postgres://localhost/rpg_shop?sslmode=disable"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Couldn't find environment file")
+		os.Exit(1)
+	}
+	connStr := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal("Could not connect to database:", err)
