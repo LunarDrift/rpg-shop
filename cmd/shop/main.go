@@ -45,15 +45,31 @@ func main() {
 		browseItems()
 	case "buy":
 		if len(os.Args) < 3 {
-			fmt.Println("Usage: shop buy <item-id>")
+			fmt.Println("Usage: shop buy <item-id> [quantity]")
 			os.Exit(1)
 		}
-		buyItem(os.Args[2])
+		quantity := "1"
+		if len(os.Args) >= 4 {
+			quantity = os.Args[3]
+		}
+		buyItem(os.Args[2], quantity)
 	case "restock":
 		restockItem(os.Args[2], os.Args[3])
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
+}
+
+func checkResponseError(r *http.Response, errMsg string) bool {
+	if r.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		json.NewDecoder(r.Body).Decode(&errResp)
+		fmt.Println(Red+errMsg+":"+Reset, errResp.Error)
+		return true
+	}
+	return false
 }
 
 func browseItems() {
@@ -78,7 +94,7 @@ func browseItems() {
 	}
 }
 
-func buyItem(idx string) {
+func buyItem(idx string, quantity string) {
 	// fetch all items
 	itemsResp, err := http.Get(baseURL + "/items")
 	if err != nil {
@@ -98,8 +114,19 @@ func buyItem(idx string) {
 		fmt.Println("Invalid item number")
 		os.Exit(1)
 	}
+	qtyInt, err := strconv.Atoi(quantity)
+	if err != nil {
+		fmt.Println("Please enter a valid number")
+		os.Exit(1)
+	}
 
-	resp, err := http.Post(baseURL+"/items/buy/"+items[idxInt-1].ID.String(), "application/json", nil)
+	body := strings.NewReader(fmt.Sprintf(`{"quantity": %d}`, qtyInt))
+	req, err := http.NewRequest("POST", baseURL+"/items/buy/"+items[idxInt-1].ID.String(), body)
+	if err != nil {
+		log.Fatal("Error making request:", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal("Could not reach shop:", err)
 	}
@@ -111,7 +138,7 @@ func buyItem(idx string) {
 
 	var item Item
 	json.NewDecoder(resp.Body).Decode(&item)
-	fmt.Printf("You purchased %s for %d gold!\n", item.Name, item.Price)
+	fmt.Printf("You purchased "+Bold+Blue+"%dx %s"+Reset+" for "+Yellow+"%dg"+Reset+"\n", qtyInt, item.Name, item.Price*int32(qtyInt))
 }
 
 func restockItem(idx string, quantity string) {
@@ -146,7 +173,7 @@ func restockItem(idx string, quantity string) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal("Error sending request", err)
+		log.Fatal("Could not reach shop:", err)
 	}
 	defer resp.Body.Close()
 
@@ -158,16 +185,4 @@ func restockItem(idx string, quantity string) {
 	json.NewDecoder(resp.Body).Decode(&item)
 
 	fmt.Printf("Restocked: "+Bold+Blue+"%-20s"+Reset+"  (qty: %d)\n", item.Name, item.Quantity)
-}
-
-func checkResponseError(r *http.Response, errMsg string) bool {
-	if r.StatusCode != http.StatusOK {
-		var errResp struct {
-			Error string `json:"error"`
-		}
-		json.NewDecoder(r.Body).Decode(&errResp)
-		fmt.Println(Red+errMsg+":"+Reset, errResp.Error)
-		return true
-	}
-	return false
 }

@@ -81,6 +81,15 @@ func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Quantity int32 `json:"quantity"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
 	itemIDStr := r.PathValue("item_id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
@@ -99,8 +108,13 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.Quantity > item.Quantity {
+		respondWithError(w, http.StatusBadRequest, "Not enough in stock")
+		return
+	}
+
 	updateParams := database.UpdateQuantityParams{
-		Quantity: item.Quantity - 1,
+		Quantity: item.Quantity - params.Quantity,
 		ID:       itemID,
 	}
 	updated, err := s.db.UpdateQuantity(r.Context(), updateParams)
