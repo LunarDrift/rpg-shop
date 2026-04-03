@@ -77,8 +77,8 @@ In a separate terminal:
 # Browse all items in the shop
 go run ./cmd/shop browse
 
-# Buy an item by its index number
-go run ./cmd/shop buy 2
+# Buy an item by its index number and optional quantity
+go run ./cmd/shop buy 2 5
 
 # Restock an item (shopkeeper)
 go run ./cmd/shop/restock 2 10
