@@ -36,7 +36,7 @@ type Item struct {
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: shop <command>")
-		fmt.Println("Commands: browse, buy <id>")
+		fmt.Println("Commands: browse, buy <idx> [quantity], restock <idx> <quantity>")
 		os.Exit(1)
 	}
 
