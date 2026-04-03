@@ -7,7 +7,7 @@ A RESTful API and CLI client for an RPG shop inventory system, built with Go and
 - **Go:** HTTP server and CLI client
 - **PostgreSQL:** persistent storage
 - **goose:** database migrations
--- **sqlc:** type-safe SQL query generation
+- **sqlc:** type-safe SQL query generation
 
 ## Features
 - Browse shop inventory with item names, prices, and current quantity
