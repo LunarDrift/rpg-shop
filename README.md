@@ -57,7 +57,14 @@ goose -dir sql/schema postgres "postgres://localhost/rpg_shop?sslmode=disable" u
 ```
 
 4. Set up the environment variables
-  - Rename the `.env.example` file to `.env` and enter your database name
+     - Rename the `.env.example` file to `.env` and enter your database name
+     ```
+     # If your Postgres user has a password:
+     DB_URL=postgres://username:password@localhost/rpg_shop?sslmode=disable
+
+     # If no password required:
+     DB_URL=postgres://localhost/rpg_shop?sslmode=disable
+     ```
 
 5. Install dependencies
 ```bash
