@@ -164,11 +164,40 @@ func login(name string) {
 	fmt.Printf("Logged in as %s\n", user.Name)
 }
 
+func register(name string) {
+	// make request to api
+	body := strings.NewReader(fmt.Sprintf(`{"name": "%s"}`, name))
+	req, err := http.NewRequest("POST", baseURL+"/users", body)
+	if err != nil {
+		log.Fatal("Could not reach server:", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("Could not send request:", err)
+	}
+	defer resp.Body.Close()
+	if checkResponseError(resp, "Could not create user") {
+		return
+	}
+
+	// save as current user in config
+	var user User
+	json.NewDecoder(resp.Body).Decode(&user)
+
+	cfg := Config{}
+	if err = cfg.SetUser(user.ID, user.Name); err != nil {
+		log.Fatal("Could not set user in config")
+	}
+	fmt.Println("User created and logged in")
+}
+
 // ----------------------------------------------------------------------------------------------------
 // --------- RESPONSE CHECK ----------
 // ----------------------------------------------------------------------------------------------------
 func checkResponseError(r *http.Response, errMsg string) bool {
-	if r.StatusCode != http.StatusOK {
+	if r.StatusCode != http.StatusOK && r.StatusCode != http.StatusCreated {
 		var errResp struct {
 			Error string `json:"error"`
 		}

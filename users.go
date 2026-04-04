@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -19,6 +20,11 @@ func (s *Server) handlerRegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.db.CreateUser(r.Context(), params.Name)
 	if err != nil {
+		// not the best solution; would be better to use pq's error types to check specific postgres error codes
+		if strings.Contains(err.Error(), "unique constraint") {
+			respondWithError(w, http.StatusBadRequest, "Username already taken", err)
+			return
+		}
 		respondWithError(w, http.StatusInternalServerError, "Could not create user", err)
 		return
 	}

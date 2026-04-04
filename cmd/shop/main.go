@@ -38,6 +38,7 @@ func main() {
 	switch os.Args[1] {
 	case "browse":
 		browseItems()
+
 	case "buy":
 		if len(os.Args) < 3 {
 			fmt.Println("Usage: shop buy <item-id> [quantity]")
@@ -48,14 +49,24 @@ func main() {
 			quantity = os.Args[3]
 		}
 		buyItem(os.Args[2], quantity)
+
 	case "restock":
 		restockItem(os.Args[2], os.Args[3])
+
 	case "login":
 		if len(os.Args) < 3 {
 			fmt.Println("Usage: shop login <name>")
 			os.Exit(1)
 		}
 		login(os.Args[2])
+
+	case "register":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: shop register <name>")
+			os.Exit(1)
+		}
+		register(os.Args[2])
+
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
