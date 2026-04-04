@@ -56,8 +56,13 @@ createdb rpg_shop
 goose -dir sql/schema postgres "postgres://localhost/rpg_shop?sslmode=disable" up
 ```
 
-4. Set up the environment variables
-     - Rename the `.env.example` file to `.env` and enter your database name
+4. Seed the database
+```bash
+psql rpg_shop < sql/seed.sql
+```
+
+5. Set up the environment variables
+     - Create a `.env` file and enter your database name:
      ```
      # If your Postgres user has a password:
      DB_URL=postgres://username:password@localhost/rpg_shop?sslmode=disable
@@ -66,7 +71,7 @@ goose -dir sql/schema postgres "postgres://localhost/rpg_shop?sslmode=disable" u
      DB_URL=postgres://localhost/rpg_shop?sslmode=disable
      ```
 
-5. Install dependencies
+6. Install dependencies
 ```bash
 go mod tidy
 ```
