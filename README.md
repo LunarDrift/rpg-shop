@@ -62,14 +62,18 @@ psql rpg_shop < sql/seed.sql
 ```
 
 5. Set up the environment variables
-     - Create a `.env` file and enter your database name:
+     - Copy and rename the `.env.example` file to `.env` and enter your database name:
+     ```bash
+     cp .env.example .env
      ```
-     # If your Postgres user has a password:
-     DB_URL=postgres://username:password@localhost/rpg_shop?sslmode=disable
 
-     # If no password required:
-     DB_URL=postgres://localhost/rpg_shop?sslmode=disable
-     ```
+      ```
+      # If your Postgres user has a password:
+      DB_URL=postgres://username:password@localhost/rpg_shop?sslmode=disable
+
+      # If no password required:
+      DB_URL=postgres://localhost/rpg_shop?sslmode=disable
+      ```
 
 6. Install dependencies
 ```bash
