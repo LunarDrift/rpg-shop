@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/LunarDrift/rpg-shop/internal/database"
+	"github.com/google/uuid"
 )
 
 func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -29,4 +30,30 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSON(w, http.StatusCreated, user)
+}
+
+func (s *Server) handlerGetAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := s.db.GetAllUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch users", err)
+		return
+	}
+	respondWithJSON(w, http.StatusOK, users)
+}
+
+func (s *Server) handlerGetUserByID(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("id")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID", err)
+		return
+	}
+
+	user, err := s.db.GetUserByID(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch user", err)
+		return
+	}
+	respondWithJSON(w, http.StatusOK, user)
 }

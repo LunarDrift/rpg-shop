@@ -41,6 +41,8 @@ func main() {
 
 	// User routes
 	mux.HandleFunc("POST /users", server.handlerCreateUser)
+	mux.HandleFunc("GET /users", server.handlerGetAllUsers)
+	mux.HandleFunc("GET /users/{id}", server.handlerGetUserByID)
 
 	httpServer := http.Server{
 		Addr:    ":8080",
