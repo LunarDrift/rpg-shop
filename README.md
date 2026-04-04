@@ -100,9 +100,6 @@ go run ./cmd/shop buy 2 5
 go run ./cmd/shop/restock 2 10
 ```
 
-### Example output
-
-
 ## API Endpoints
 
 
@@ -115,6 +112,10 @@ go run ./cmd/shop/restock 2 10
 |POST|`/items/buy/{id}`|Buy an item|
 |PATCH|`/items/restock/{id}`|Restock an item|
 |DELETE|`/items/{id}`|Delete an item|
+|POST|`/users`|Register a new user|
+|GET|`/users`|Fetch a user by name or list all users if no name provided|
+|GET|`/users/{id}`|Fetch a user by ID|
+
 
 ### Seeding the Database
 To add items directly via psql:
