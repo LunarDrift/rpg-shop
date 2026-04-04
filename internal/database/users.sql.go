@@ -18,7 +18,7 @@ VALUES (
   $1,
   $2
   )
-RETURNING id, name, balance
+RETURNING id, name, balance, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -29,12 +29,18 @@ type CreateUserParams struct {
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Name, arg.Balance)
 	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.Balance)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Balance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, name, balance FROM users
+SELECT id, name, balance, created_at, updated_at FROM users
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -46,7 +52,13 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 	var items []User
 	for rows.Next() {
 		var i User
-		if err := rows.Scan(&i.ID, &i.Name, &i.Balance); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Balance,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -61,14 +73,38 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, balance FROM users
+SELECT id, name, balance, created_at, updated_at FROM users
 WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.Balance)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Balance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByName = `-- name: GetUserByName :one
+SELECT id, name, balance, created_at, updated_at FROM users
+WHERE name = $1
+`
+
+func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByName, name)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Balance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
@@ -76,7 +112,7 @@ const updateBalance = `-- name: UpdateBalance :one
 UPDATE users
 SET balance = $2
 WHERE id = $1
-RETURNING id, name, balance
+RETURNING id, name, balance, created_at, updated_at
 `
 
 type UpdateBalanceParams struct {
@@ -87,6 +123,12 @@ type UpdateBalanceParams struct {
 func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, updateBalance, arg.ID, arg.Balance)
 	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.Balance)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Balance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
