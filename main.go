@@ -40,9 +40,9 @@ func main() {
 	mux.HandleFunc("DELETE /items/{item_id}", server.handlerDeleteItemByID)
 
 	// -- User routes --
-	mux.HandleFunc("POST /users", server.handlerCreateUser)
-	mux.HandleFunc("GET /users", server.handlerGetAllUsers)
+	mux.HandleFunc("POST /users", server.handlerRegisterUser)
 	mux.HandleFunc("GET /users/{id}", server.handlerGetUserByID)
+	mux.HandleFunc("GET /users", server.handlerGetUser)
 
 	httpServer := http.Server{
 		Addr:    ":8080",
