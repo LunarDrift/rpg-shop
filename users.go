@@ -5,12 +5,15 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/LunarDrift/rpg-shop/internal/auth"
+	"github.com/LunarDrift/rpg-shop/internal/database"
 	"github.com/google/uuid"
 )
 
 func (s *Server) handlerRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name string `json:"name"`
+		Name     string `json:"name"`
+		Password string `json:"password"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
@@ -18,7 +21,18 @@ func (s *Server) handlerRegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.db.CreateUser(r.Context(), params.Name)
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not hash password", err)
+		return
+	}
+
+	createUserParams := database.CreateUserParams{
+		Name:           params.Name,
+		HashedPassword: hashedPassword,
+	}
+
+	user, err := s.db.CreateUser(r.Context(), createUserParams)
 	if err != nil {
 		// not the best solution; would be better to use pq's error types to check specific postgres error codes
 		if strings.Contains(err.Error(), "unique constraint") {

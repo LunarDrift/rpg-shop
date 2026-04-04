@@ -12,19 +12,25 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, name, balance, created_at, updated_at)
+INSERT INTO users (id, name, hashed_password, balance, created_at, updated_at)
 VALUES (
   gen_random_uuid(),
   $1,
+  $2,
   500,
   NOW(),
   NOW()
   )
-RETURNING id, name, balance, created_at, updated_at
+RETURNING id, name, balance, created_at, updated_at, hashed_password
 `
 
-func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, name)
+type CreateUserParams struct {
+	Name           string
+	HashedPassword string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Name, arg.HashedPassword)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -32,12 +38,13 @@ func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HashedPassword,
 	)
 	return i, err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, name, balance, created_at, updated_at FROM users
+SELECT id, name, balance, created_at, updated_at, hashed_password FROM users
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -55,6 +62,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.Balance,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HashedPassword,
 		); err != nil {
 			return nil, err
 		}
@@ -70,7 +78,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, balance, created_at, updated_at FROM users
+SELECT id, name, balance, created_at, updated_at, hashed_password FROM users
 WHERE id = $1
 `
 
@@ -83,12 +91,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HashedPassword,
 	)
 	return i, err
 }
 
 const getUserByName = `-- name: GetUserByName :one
-SELECT id, name, balance, created_at, updated_at FROM users
+SELECT id, name, balance, created_at, updated_at, hashed_password FROM users
 WHERE name = $1
 `
 
@@ -101,6 +110,7 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HashedPassword,
 	)
 	return i, err
 }
@@ -109,7 +119,7 @@ const updateBalance = `-- name: UpdateBalance :one
 UPDATE users
 SET balance = $2
 WHERE id = $1
-RETURNING id, name, balance, created_at, updated_at
+RETURNING id, name, balance, created_at, updated_at, hashed_password
 `
 
 type UpdateBalanceParams struct {
@@ -126,6 +136,7 @@ func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (U
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HashedPassword,
 	)
 	return i, err
 }

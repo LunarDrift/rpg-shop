@@ -21,9 +21,10 @@ type Item struct {
 }
 
 type User struct {
-	ID        uuid.UUID
-	Name      string
-	Balance   int32
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID             uuid.UUID
+	Name           string
+	Balance        int32
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	HashedPassword string
 }
