@@ -1,5 +1,5 @@
 # RPG-SHOP
-A RESTful API and CLI client for an RPG shop inventory system, built with Go and PostgreSQL. The API handles all the business logic and database operations. The CLI client provides a terminal interface for browsing and purchasing items.
+A (WIP) RESTful API and CLI client for an RPG shop inventory system, built with Go and PostgreSQL. The API handles all the business logic and database operations. The CLI client provides a terminal interface for browsing and purchasing items.
 
 ![Example CLI output](ex.png)
 
