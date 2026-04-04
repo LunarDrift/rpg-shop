@@ -82,7 +82,8 @@ func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Quantity int32 `json:"quantity"`
+		UserID   uuid.UUID `json:"id"`
+		Quantity int32     `json:"quantity"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
@@ -97,33 +98,62 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := s.db.GetItemByID(r.Context(), itemID)
+	userItemParams := database.GetUserAndItemParams{ID: params.UserID, ID_2: itemID}
+	userItemRow, err := s.db.GetUserAndItem(r.Context(), userItemParams)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Item not found", err)
+		respondWithError(w, http.StatusNotFound, "User/Item not found", err)
 		return
 	}
 
-	if item.Quantity <= 0 {
+	// Quantity checking
+	if userItemRow.Quantity <= 0 {
 		respondWithError(w, http.StatusBadRequest, "Item out of stock", err)
 		return
 	}
-
-	if params.Quantity > item.Quantity {
+	if params.Quantity > userItemRow.Quantity {
 		respondWithError(w, http.StatusBadRequest, "Not enough in stock", err)
 		return
 	}
+	// Balance check
+	totalPrice := userItemRow.Price * int32(params.Quantity)
+	if userItemRow.Balance < totalPrice {
+		respondWithError(w, http.StatusBadRequest, "Not enough gold", err)
+		return
+	}
 
-	updateParams := database.UpdateQuantityParams{
-		Quantity: item.Quantity - params.Quantity,
+	qtyParams := database.UpdateQuantityParams{
+		Quantity: userItemRow.Quantity - params.Quantity,
 		ID:       itemID,
 	}
-	updated, err := s.db.UpdateQuantity(r.Context(), updateParams)
+
+	balanceParams := database.UpdateBalanceParams{
+		ID:      params.UserID,
+		Balance: userItemRow.Balance - totalPrice,
+	}
+
+	updatedQty, err := s.db.UpdateQuantity(r.Context(), qtyParams)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not update item", err)
 		return
 	}
+	updatedUser, err := s.db.UpdateBalance(r.Context(), balanceParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not update user", err)
+		return
+	}
 
-	respondWithJSON(w, http.StatusOK, updated)
+	type purchaseResponse struct {
+		ItemName  string `json:"item_name"`
+		Quantity  int32  `json:"quantity"`
+		TotalCost int32  `json:"total_cost"`
+		Balance   int32  `json:"balance"`
+	}
+	respondWithJSON(w, http.StatusOK, purchaseResponse{
+		ItemName:  updatedQty.Name,
+		Quantity:  updatedQty.Quantity,
+		TotalCost: totalPrice,
+		Balance:   updatedUser.Balance,
+	})
 }
 
 func (s *Server) handlerRestockItem(w http.ResponseWriter, r *http.Request) {

@@ -71,3 +71,22 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	err := row.Scan(&i.ID, &i.Name, &i.Balance)
 	return i, err
 }
+
+const updateBalance = `-- name: UpdateBalance :one
+UPDATE users
+SET balance = $2
+WHERE id = $1
+RETURNING id, name, balance
+`
+
+type UpdateBalanceParams struct {
+	ID      uuid.UUID
+	Balance int32
+}
+
+func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateBalance, arg.ID, arg.Balance)
+	var i User
+	err := row.Scan(&i.ID, &i.Name, &i.Balance)
+	return i, err
+}

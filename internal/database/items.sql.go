@@ -118,6 +118,31 @@ func (q *Queries) GetItemByID(ctx context.Context, id uuid.UUID) (Item, error) {
 	return i, err
 }
 
+const getUserAndItem = `-- name: GetUserAndItem :one
+SELECT users.balance, items.price, items.quantity
+FROM users
+JOIN items ON items.id = $2
+WHERE users.id = $1
+`
+
+type GetUserAndItemParams struct {
+	ID   uuid.UUID
+	ID_2 uuid.UUID
+}
+
+type GetUserAndItemRow struct {
+	Balance  int32
+	Price    int32
+	Quantity int32
+}
+
+func (q *Queries) GetUserAndItem(ctx context.Context, arg GetUserAndItemParams) (GetUserAndItemRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserAndItem, arg.ID, arg.ID_2)
+	var i GetUserAndItemRow
+	err := row.Scan(&i.Balance, &i.Price, &i.Quantity)
+	return i, err
+}
+
 const updateQuantity = `-- name: UpdateQuantity :one
 UPDATE items
 SET quantity = $1,

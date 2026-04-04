@@ -29,3 +29,9 @@ SET quantity = $1,
     updated_at = NOW()
 WHERE id = $2
 RETURNING *;
+
+-- name: GetUserAndItem :one
+SELECT users.balance, items.price, items.quantity
+FROM users
+JOIN items ON items.id = $2
+WHERE users.id = $1;

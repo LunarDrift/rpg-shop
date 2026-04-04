@@ -13,3 +13,9 @@ WHERE id = $1;
 
 -- name: GetAllUsers :many
 SELECT * FROM users;
+
+-- name: UpdateBalance :one
+UPDATE users
+SET balance = $2
+WHERE id = $1
+RETURNING *;

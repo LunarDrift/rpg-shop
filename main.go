@@ -30,7 +30,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// Routes go here
+	// -- Item routes --
 	mux.HandleFunc("GET /health", handlerHealth)
 	mux.HandleFunc("POST /items", server.handlerCreateItem)
 	mux.HandleFunc("GET /items", server.handlerGetItems)
@@ -39,7 +39,7 @@ func main() {
 	mux.HandleFunc("PATCH /items/restock/{item_id}", server.handlerRestockItem)
 	mux.HandleFunc("DELETE /items/{item_id}", server.handlerDeleteItemByID)
 
-	// User routes
+	// -- User routes --
 	mux.HandleFunc("POST /users", server.handlerCreateUser)
 	mux.HandleFunc("GET /users", server.handlerGetAllUsers)
 	mux.HandleFunc("GET /users/{id}", server.handlerGetUserByID)
