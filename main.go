@@ -39,6 +39,9 @@ func main() {
 	mux.HandleFunc("PATCH /items/restock/{item_id}", server.handlerRestockItem)
 	mux.HandleFunc("DELETE /items/{item_id}", server.handlerDeleteItemByID)
 
+	// User routes
+	mux.HandleFunc("POST /users", server.handlerCreateUser)
+
 	httpServer := http.Server{
 		Addr:    ":8080",
 		Handler: mux,

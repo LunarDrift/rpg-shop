@@ -19,3 +19,9 @@ type Item struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type User struct {
+	ID      uuid.UUID
+	Name    string
+	Balance int32
+}

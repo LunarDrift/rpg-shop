@@ -53,7 +53,7 @@ createdb rpg_shop
 
 3. Run migrations
 ```bash
-goose -dir sql/schema postgres "postgres://localhost/rpg_shop?sslmode=disable" up
+goose -dir sql/schema postgres "postgres://username:password@localhost/rpg_shop?sslmode=disable" up
 ```
 
 4. Seed the database
