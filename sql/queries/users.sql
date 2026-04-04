@@ -3,7 +3,7 @@ INSERT INTO users (id, name, balance, created_at, updated_at)
 VALUES (
   gen_random_uuid(),
   $1,
-  $2,
+  500,
   NOW(),
   NOW()
   )
@@ -25,3 +25,6 @@ RETURNING *;
 -- name: GetUserByName :one
 SELECT * FROM users
 WHERE name = $1;
+
+-- name: DeleteUsers :exec
+DELETE FROM users *;

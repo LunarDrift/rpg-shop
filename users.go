@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/LunarDrift/rpg-shop/internal/database"
 	"github.com/google/uuid"
 )
 
 func (s *Server) handlerRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var params struct {
-		Name    string `json:"name"`
-		Balance int32  `json:"balance"`
+		Name string `json:"name"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
@@ -19,12 +17,7 @@ func (s *Server) handlerRegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbUserParams := database.CreateUserParams{
-		Name:    params.Name,
-		Balance: params.Balance,
-	}
-
-	user, err := s.db.CreateUser(r.Context(), dbUserParams)
+	user, err := s.db.CreateUser(r.Context(), params.Name)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not create user", err)
 		return

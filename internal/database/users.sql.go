@@ -16,20 +16,15 @@ INSERT INTO users (id, name, balance, created_at, updated_at)
 VALUES (
   gen_random_uuid(),
   $1,
-  $2,
+  500,
   NOW(),
   NOW()
   )
 RETURNING id, name, balance, created_at, updated_at
 `
 
-type CreateUserParams struct {
-	Name    string
-	Balance int32
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Name, arg.Balance)
+func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, name)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -39,6 +34,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteUsers = `-- name: DeleteUsers :exec
+DELETE FROM users *
+`
+
+func (q *Queries) DeleteUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteUsers)
+	return err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
