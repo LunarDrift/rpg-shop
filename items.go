@@ -18,7 +18,7 @@ func (s *Server) handlerCreateItem(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (s *Server) handlerCreateItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := s.db.CreateItem(r.Context(), dbItemParams)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not create item")
+		respondWithError(w, http.StatusInternalServerError, "Could not create item", err)
 		return
 	}
 
@@ -41,7 +41,7 @@ func (s *Server) handlerCreateItem(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handlerGetItems(w http.ResponseWriter, r *http.Request) {
 	items, err := s.db.GetAllItems(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not fetch items")
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch items", err)
 		return
 	}
 	respondWithJSON(w, http.StatusOK, items)
@@ -52,13 +52,13 @@ func (s *Server) handlerGetItemByID(w http.ResponseWriter, r *http.Request) {
 
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID", err)
 		return
 	}
 
 	item, err := s.db.GetItemByID(r.Context(), itemID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not fetch item")
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch item", err)
 		return
 	}
 	respondWithJSON(w, http.StatusOK, item)
@@ -68,13 +68,13 @@ func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := r.PathValue("item_id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID", err)
 		return
 	}
 
 	err = s.db.DeleteItemByID(r.Context(), itemID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not delete item")
+		respondWithError(w, http.StatusInternalServerError, "Could not delete item", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -86,30 +86,30 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 	}
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	itemIDStr := r.PathValue("item_id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID", err)
 		return
 	}
 
 	item, err := s.db.GetItemByID(r.Context(), itemID)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Item not found")
+		respondWithError(w, http.StatusNotFound, "Item not found", err)
 		return
 	}
 
 	if item.Quantity <= 0 {
-		respondWithError(w, http.StatusBadRequest, "Item out of stock")
+		respondWithError(w, http.StatusBadRequest, "Item out of stock", err)
 		return
 	}
 
 	if params.Quantity > item.Quantity {
-		respondWithError(w, http.StatusBadRequest, "Not enough in stock")
+		respondWithError(w, http.StatusBadRequest, "Not enough in stock", err)
 		return
 	}
 
@@ -119,7 +119,7 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 	}
 	updated, err := s.db.UpdateQuantity(r.Context(), updateParams)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not update item")
+		respondWithError(w, http.StatusInternalServerError, "Could not update item", err)
 		return
 	}
 
@@ -133,20 +133,20 @@ func (s *Server) handlerRestockItem(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	itemIDStr := r.PathValue("item_id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid item ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID", err)
 		return
 	}
 
 	item, err := s.db.GetItemByID(r.Context(), itemID)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Item not found")
+		respondWithError(w, http.StatusNotFound, "Item not found", err)
 		return
 	}
 
@@ -157,7 +157,7 @@ func (s *Server) handlerRestockItem(w http.ResponseWriter, r *http.Request) {
 
 	updatedItem, err := s.db.UpdateQuantity(r.Context(), updateParams)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not update item")
+		respondWithError(w, http.StatusInternalServerError, "Could not update item", err)
 		return
 	}
 

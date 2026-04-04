@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/LunarDrift/rpg-shop/internal/database"
@@ -23,6 +24,12 @@ func respondWithJSON(w http.ResponseWriter, status int, payload any) {
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
-func respondWithError(w http.ResponseWriter, status int, message string) {
-	respondWithJSON(w, status, map[string]string{"error": message})
+func respondWithError(w http.ResponseWriter, status int, message string, err error) {
+	if err != nil {
+		log.Println(err)
+	}
+	type errorResponse struct {
+		Error string `json:"error"`
+	}
+	respondWithJSON(w, status, errorResponse{Error: message})
 }
