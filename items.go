@@ -68,7 +68,7 @@ func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
 	// token validation from context
 	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
 	if !ok {
-		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", err)
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
 		return
 	}
 
