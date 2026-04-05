@@ -37,7 +37,7 @@ func main() {
 
 	// -- Item routes --
 	mux.HandleFunc("GET /health", handlerHealth)
-	mux.HandleFunc("POST /items", s.handlerCreateItem)
+	mux.HandleFunc("POST /items", s.middlewareAuth(s.handlerCreateItem))
 	mux.HandleFunc("GET /items", s.handlerGetItems)
 	mux.HandleFunc("GET /items/{item_id}", s.handlerGetItemByID)
 	mux.HandleFunc("POST /items/buy/{item_id}", s.middlewareAuth(s.handlerBuyItem))

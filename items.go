@@ -9,6 +9,24 @@ import (
 )
 
 func (s *Server) handlerCreateItem(w http.ResponseWriter, r *http.Request) {
+	// token validation from context
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
+		return
+	}
+
+	// check if admin
+	dbUser, err := s.db.GetUserByID(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch user", err)
+		return
+	}
+	if !dbUser.IsAdmin {
+		respondWithError(w, http.StatusForbidden, "Not authorized to do that", nil)
+		return
+	}
+
 	var params struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
@@ -16,7 +34,7 @@ func (s *Server) handlerCreateItem(w http.ResponseWriter, r *http.Request) {
 		Quantity    int32  `json:"quantity"`
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&params)
+	err = json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return

@@ -112,8 +112,14 @@ go run ./cmd/shop login <name> <password>
 # Buy an item by its index number and optional quantity
 go run ./cmd/shop buy 2 5
 
-# Restock an item (shopkeeper)
+# Show the current user and balance
+go run ./cmd/shop whoami
+
+# Restock an item (shopkeeper/admin)
 go run ./cmd/shop/restock 2 10
+
+# Log out
+go run ./cmd/shop logout
 ```
 
 ## API Endpoints
@@ -124,14 +130,14 @@ go run ./cmd/shop/restock 2 10
 |GET|`/health`|Health check|
 |GET|`/items`|List all items|
 |GET|`/items/{id}`|Get item by ID|
-|POST|`/items`|Create a new item|
+|POST|`/items`|Create a new item (requires admin privelages)|
 |POST|`/items/buy/{id}`|Buy an item|
-|PATCH|`/items/restock/{id}`|Restock an item|
-|DELETE|`/items/{id}`|Delete an item|
+|PATCH|`/items/restock/{id}`|Restock an item (requires admin privelages)|
+|DELETE|`/items/{id}`|Delete an item (requires admin privelages)|
 |POST|`/users`|Register a new user|
 |POST| `/users/login`|Log in to a registered user with name and password|
-|GET|`/users`|Fetch a user by name or list all users if no name provided|
-|GET|`/users/{id}`|Fetch a user by ID|
+|GET|`/users`|Get a user by name or list all users if no name provided|
+|GET|`/users/{id}`|Get a user by ID|
 
 
 ### Seeding the Database
