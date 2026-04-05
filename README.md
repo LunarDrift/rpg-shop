@@ -15,7 +15,7 @@ A (WIP) RESTful API and CLI client for an RPG shop inventory system, built with 
 - Restock items by index with a specified quantity
 - Full REST API with JSON responses
 - Register and log in with a name and password
-- Password hashing using [argon2id](github.com/alexedwards/argon2id)
+- Password hashing using [argon2id](https://github.com/alexedwards/argon2id)
 
 ## Project Structure:
 ```
