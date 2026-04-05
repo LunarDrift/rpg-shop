@@ -46,6 +46,7 @@ func main() {
 
 	// -- User routes --
 	mux.HandleFunc("POST /users", server.handlerRegisterUser)
+	mux.HandleFunc("POST /users/login", server.handlerLogIn)
 	mux.HandleFunc("GET /users/{id}", server.handlerGetUserByID)
 	mux.HandleFunc("GET /users", server.handlerGetUser)
 

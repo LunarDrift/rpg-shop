@@ -63,6 +63,56 @@ func (s *Server) handlerRegisterUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, user)
 }
 
+func (s *Server) handlerLogIn(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Name     string `json:"name"`
+		Password string `json:"password"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
+		return
+	}
+
+	dbUser, err := s.db.GetUserByName(r.Context(), params.Name)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect name or password", err)
+		return
+	}
+
+	// check password against stored hash
+	match, err := auth.CheckPasswordHash(params.Password, dbUser.HashedPassword)
+	if err != nil || !match {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect name or password", err)
+		return
+	}
+
+	// build token
+	accessToken, err := auth.MakeJWT(dbUser.ID, s.jwtSecret, time.Hour)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not make token", err)
+		return
+	}
+
+	type loginResponse struct {
+		ID        uuid.UUID `json:"id"`
+		Name      string    `json:"name"`
+		Balance   int32     `json:"balance"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Token     string    `json:"token"`
+	}
+	loginResp := loginResponse{
+		ID:        dbUser.ID,
+		Name:      dbUser.Name,
+		Balance:   dbUser.Balance,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Token:     accessToken,
+	}
+	respondWithJSON(w, http.StatusOK, loginResp)
+}
+
 func (s *Server) handlerGetUserByID(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")
 
@@ -72,10 +122,18 @@ func (s *Server) handlerGetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.db.GetUserByID(r.Context(), userID)
+	dbUser, err := s.db.GetUserByID(r.Context(), userID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not fetch user", err)
 		return
+	}
+
+	user := User{
+		ID:        dbUser.ID,
+		Name:      dbUser.Name,
+		Balance:   dbUser.Balance,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
 	}
 	respondWithJSON(w, http.StatusOK, user)
 }
@@ -94,10 +152,18 @@ func (s *Server) handlerGetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.db.GetUserByName(r.Context(), userName)
+	dbUser, err := s.db.GetUserByName(r.Context(), userName)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "User not found", err)
 		return
+	}
+
+	user := User{
+		ID:        dbUser.ID,
+		Name:      dbUser.Name,
+		Balance:   dbUser.Balance,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
 	}
 	respondWithJSON(w, http.StatusOK, user)
 }
