@@ -11,11 +11,15 @@ import (
 )
 
 type Server struct {
-	db *database.Queries
+	db        *database.Queries
+	jwtSecret string
 }
 
-func NewServer(db *database.Queries) *Server {
-	return &Server{db: db}
+func NewServer(db *database.Queries, jwtSecret string) *Server {
+	return &Server{
+		db:        db,
+		jwtSecret: jwtSecret,
+	}
 }
 
 func respondWithJSON(w http.ResponseWriter, status int, payload any) {

@@ -18,7 +18,12 @@ func main() {
 		log.Fatal("Couldn't find environment file")
 		os.Exit(1)
 	}
+
+	// get env variables
 	connStr := os.Getenv("DB_URL")
+	jwtSecret := os.Getenv("JWT_SECRET")
+
+	// open connection to database
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal("Could not connect to database:", err)
@@ -26,7 +31,7 @@ func main() {
 	defer db.Close()
 
 	queries := database.New(db)
-	server := NewServer(queries)
+	server := NewServer(queries, jwtSecret)
 
 	mux := http.NewServeMux()
 
