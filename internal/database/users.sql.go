@@ -21,7 +21,7 @@ VALUES (
   NOW(),
   NOW()
   )
-RETURNING id, name, balance, created_at, updated_at, hashed_password
+RETURNING id, name, balance, created_at, updated_at, hashed_password, is_admin
 `
 
 type CreateUserParams struct {
@@ -39,12 +39,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsAdmin,
 	)
 	return i, err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, name, balance, created_at, updated_at, hashed_password FROM users
+SELECT id, name, balance, created_at, updated_at, hashed_password, is_admin FROM users
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -63,6 +64,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.HashedPassword,
+			&i.IsAdmin,
 		); err != nil {
 			return nil, err
 		}
@@ -78,7 +80,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, balance, created_at, updated_at, hashed_password FROM users
+SELECT id, name, balance, created_at, updated_at, hashed_password, is_admin FROM users
 WHERE id = $1
 `
 
@@ -92,12 +94,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsAdmin,
 	)
 	return i, err
 }
 
 const getUserByName = `-- name: GetUserByName :one
-SELECT id, name, balance, created_at, updated_at, hashed_password FROM users
+SELECT id, name, balance, created_at, updated_at, hashed_password, is_admin FROM users
 WHERE name = $1
 `
 
@@ -111,6 +114,7 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsAdmin,
 	)
 	return i, err
 }
@@ -119,7 +123,7 @@ const updateBalance = `-- name: UpdateBalance :one
 UPDATE users
 SET balance = $2
 WHERE id = $1
-RETURNING id, name, balance, created_at, updated_at, hashed_password
+RETURNING id, name, balance, created_at, updated_at, hashed_password, is_admin
 `
 
 type UpdateBalanceParams struct {
@@ -137,6 +141,7 @@ func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (U
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.HashedPassword,
+		&i.IsAdmin,
 	)
 	return i, err
 }

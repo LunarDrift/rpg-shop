@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/LunarDrift/rpg-shop/internal/auth"
 	"github.com/LunarDrift/rpg-shop/internal/database"
 	"github.com/google/uuid"
 )
@@ -65,6 +66,28 @@ func (s *Server) handlerGetItemByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Missing or invalid token", err)
+		return
+	}
+	userID, err := auth.ValidateJWT(token, s.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	// check if admin
+	dbUser, err := s.db.GetUserByID(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch user", err)
+		return
+	}
+	if !dbUser.IsAdmin {
+		respondWithError(w, http.StatusForbidden, "Not authorized to do that", nil)
+		return
+	}
+
 	itemIDStr := r.PathValue("item_id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
@@ -81,11 +104,21 @@ func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
-	var params struct {
-		UserID   uuid.UUID `json:"id"`
-		Quantity int32     `json:"quantity"`
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Missing or invalid token", err)
+		return
 	}
-	err := json.NewDecoder(r.Body).Decode(&params)
+	userID, err := auth.ValidateJWT(token, s.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	var params struct {
+		Quantity int32 `json:"quantity"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
@@ -98,7 +131,7 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userItemParams := database.GetUserAndItemParams{ID: params.UserID, ID_2: itemID}
+	userItemParams := database.GetUserAndItemParams{ID: userID, ID_2: itemID}
 	userItemRow, err := s.db.GetUserAndItem(r.Context(), userItemParams)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "User/Item not found", err)
@@ -127,7 +160,7 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	balanceParams := database.UpdateBalanceParams{
-		ID:      params.UserID,
+		ID:      userID,
 		Balance: userItemRow.Balance - totalPrice,
 	}
 
@@ -157,11 +190,33 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerRestockItem(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Missing or invalid token", err)
+		return
+	}
+	userID, err := auth.ValidateJWT(token, s.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	// check if admin
+	dbUser, err := s.db.GetUserByID(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch user", err)
+		return
+	}
+	if !dbUser.IsAdmin {
+		respondWithError(w, http.StatusForbidden, "Not authorized to do that", nil)
+		return
+	}
+
 	var params struct {
 		Quantity int32 `json:"quantity"`
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&params)
+	err = json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return

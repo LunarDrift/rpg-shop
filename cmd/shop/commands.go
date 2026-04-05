@@ -39,6 +39,12 @@ func browseItems() {
 }
 
 func buyItem(idx string, quantity string) {
+	// make sure user is logged in
+	cfg, err := Read()
+	if err != nil || cfg.Token == "" {
+		fmt.Println("Not logged in. Run 'shop login <name> <password>' first")
+		os.Exit(1)
+	}
 	// fetch all items
 	itemsResp, err := http.Get(baseURL + "/items")
 	if err != nil {
@@ -70,6 +76,7 @@ func buyItem(idx string, quantity string) {
 		log.Fatal("Error making request:", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal("Could not reach shop:", err)
@@ -80,12 +87,22 @@ func buyItem(idx string, quantity string) {
 		return
 	}
 
-	var item Item
-	json.NewDecoder(resp.Body).Decode(&item)
-	fmt.Printf("You purchased "+Bold+Blue+"%dx %s"+Reset+" for "+Yellow+"%dg"+Reset+"\n", qtyInt, item.Name, item.Price*int32(qtyInt))
+	var purchase struct {
+		ItemName  string `json:"item_name"`
+		Quantity  int32  `json:"quantity"`
+		TotalCost int32  `json:"total_cost"`
+		Balance   int32  `json:"balance"`
+	}
+	json.NewDecoder(resp.Body).Decode(&purchase)
+	fmt.Printf("You purchased "+Bold+Blue+"%dx %s"+Reset+" for "+Yellow+"%dg"+Reset+"\n", qtyInt, purchase.ItemName, purchase.TotalCost)
 }
 
 func restockItem(idx string, quantity string) {
+	cfg, err := Read()
+	if err != nil || cfg.Token == "" {
+		fmt.Println("Not logged in. Run 'shop login <name> <password>' first")
+		os.Exit(1)
+	}
 	itemsResp, err := http.Get(baseURL + "/items")
 	if err != nil {
 		log.Fatal("Could not reach shop:", err)
@@ -115,6 +132,7 @@ func restockItem(idx string, quantity string) {
 		log.Fatal("Error making request:", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal("Could not reach shop:", err)
