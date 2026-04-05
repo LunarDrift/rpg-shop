@@ -143,10 +143,21 @@ func (s *Server) handlerGetUser(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch all users if no username specified
 	if userName == "" {
-		users, err := s.db.GetAllUsers(r.Context())
+		dbUsers, err := s.db.GetAllUsers(r.Context())
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, "Could not fetch users", err)
 			return
+		}
+
+		users := []User{}
+		for _, user := range dbUsers {
+			users = append(users, User{
+				ID:        user.ID,
+				Name:      user.Name,
+				Balance:   user.Balance,
+				CreatedAt: user.CreatedAt,
+				UpdatedAt: user.UpdatedAt,
+			})
 		}
 		respondWithJSON(w, http.StatusOK, users)
 		return
