@@ -15,9 +15,10 @@ import (
 // ----------------------------------------------------------------------------------------------------
 
 type User struct {
-	ID    uuid.UUID `json:"id"`
-	Name  string    `json:"name"`
-	Token string    `json:"token"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Balance int32     `json:"balance"`
+	Token   string    `json:"token"`
 }
 
 func login(name, password string) {
@@ -48,7 +49,7 @@ func login(name, password string) {
 	if err != nil {
 		log.Fatal("Could not set user in config:", err)
 	}
-	fmt.Printf("Logged in as %s\n", user.Name)
+	fmt.Printf("Logged in as "+Bold+Blue+"%s"+Reset+"\n", user.Name)
 }
 
 func register(name, password string) {
@@ -70,4 +71,23 @@ func register(name, password string) {
 		return
 	}
 	login(name, password)
+}
+
+func whoami() {
+	cfg, err := Read()
+	if err != nil || cfg.Token == "" {
+		fmt.Println("Not logged in. Use 'shop login <name> <password> first")
+		return
+	}
+
+	resp, err := http.Get(baseURL + "/users/" + cfg.CurrentUserID.String())
+	if err != nil {
+		log.Fatal("Could not reach server:", err)
+	}
+	defer resp.Body.Close()
+
+	var user User
+	json.NewDecoder(resp.Body).Decode(&user)
+
+	fmt.Printf("Logged in as "+Bold+Blue+"%s"+Reset+" | Balance: "+Yellow+"%dg"+Reset+"\n", user.Name, user.Balance)
 }

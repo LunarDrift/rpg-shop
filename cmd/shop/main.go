@@ -67,6 +67,9 @@ func main() {
 		}
 		register(os.Args[2], os.Args[3])
 
+	case "whoami":
+		whoami()
+
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
