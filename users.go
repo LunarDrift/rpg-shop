@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -175,6 +176,46 @@ func (s *Server) handlerGetUser(w http.ResponseWriter, r *http.Request) {
 		Balance:   dbUser.Balance,
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
+	}
+	respondWithJSON(w, http.StatusOK, user)
+}
+
+func (s *Server) handlerEarnGold(w http.ResponseWriter, r *http.Request) {
+	// get ID from Context
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
+		return
+	}
+	// Get user by ID for current balance
+	dbUser, err := s.db.GetUserByID(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not fetch user", err)
+		return
+	}
+	// Generate random reward with rand.Intn
+	reward := rand.Intn(90) + 10 // random between 10-100 gold
+
+	// Build UpdateBalanceParams
+	balanceParams := database.UpdateBalanceParams{
+		ID:      userID,
+		Balance: dbUser.Balance + int32(reward),
+	}
+
+	// Call Query
+	updatedDBUser, err := s.db.UpdateBalance(r.Context(), balanceParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not update user", err)
+		return
+	}
+
+	// convert to main.User
+	user := User{
+		ID:        updatedDBUser.ID,
+		Name:      updatedDBUser.Name,
+		Balance:   updatedDBUser.Balance,
+		CreatedAt: updatedDBUser.CreatedAt,
+		UpdatedAt: updatedDBUser.UpdatedAt,
 	}
 	respondWithJSON(w, http.StatusOK, user)
 }
