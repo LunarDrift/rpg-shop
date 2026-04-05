@@ -16,11 +16,13 @@ const (
 type Config struct {
 	CurrentUserID   uuid.UUID `json:"current_user_id"`
 	CurrentUserName string    `json:"current_user_name"`
+	Token           string    `json:"token"`
 }
 
-func (c *Config) SetUser(userID uuid.UUID, userName string) error {
+func (c *Config) SetUser(userID uuid.UUID, userName, token string) error {
 	c.CurrentUserID = userID
 	c.CurrentUserName = userName
+	c.Token = token
 	return write(*c)
 }
 

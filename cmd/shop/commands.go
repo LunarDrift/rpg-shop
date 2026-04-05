@@ -136,13 +136,21 @@ func restockItem(idx string, quantity string) {
 // ----------------------------------------------------------------------------------------------------
 
 type User struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
+	Token string    `json:"token"`
 }
 
-func login(name string) {
+func login(name, password string) {
 	// make request to api
-	resp, err := http.Get(baseURL + "/users?name=" + name)
+	body := strings.NewReader(fmt.Sprintf(`{"name": "%s", "password": "%s"}`, name, password))
+	req, err := http.NewRequest("POST", baseURL+"/users/login", body)
+	if err != nil {
+		log.Fatal("Could not log in:", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal("Could not reach server:", err)
 	}
@@ -157,16 +165,16 @@ func login(name string) {
 	json.NewDecoder(resp.Body).Decode(&user)
 
 	cfg := Config{}
-	err = cfg.SetUser(user.ID, user.Name)
+	err = cfg.SetUser(user.ID, user.Name, user.Token)
 	if err != nil {
-		log.Fatal("Could not set user in config", err)
+		log.Fatal("Could not set user in config:", err)
 	}
 	fmt.Printf("Logged in as %s\n", user.Name)
 }
 
-func register(name string) {
+func register(name, password string) {
 	// make request to api
-	body := strings.NewReader(fmt.Sprintf(`{"name": "%s"}`, name))
+	body := strings.NewReader(fmt.Sprintf(`{"name": "%s", "password": "%s"}`, name, password))
 	req, err := http.NewRequest("POST", baseURL+"/users", body)
 	if err != nil {
 		log.Fatal("Could not reach server:", err)
@@ -178,19 +186,11 @@ func register(name string) {
 		log.Fatal("Could not send request:", err)
 	}
 	defer resp.Body.Close()
+
 	if checkResponseError(resp, "Could not create user") {
 		return
 	}
-
-	// save as current user in config
-	var user User
-	json.NewDecoder(resp.Body).Decode(&user)
-
-	cfg := Config{}
-	if err = cfg.SetUser(user.ID, user.Name); err != nil {
-		log.Fatal("Could not set user in config")
-	}
-	fmt.Println("User created and logged in")
+	login(name, password)
 }
 
 // ----------------------------------------------------------------------------------------------------

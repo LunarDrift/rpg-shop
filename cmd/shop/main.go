@@ -54,18 +54,18 @@ func main() {
 		restockItem(os.Args[2], os.Args[3])
 
 	case "login":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: shop login <name>")
+		if len(os.Args) < 4 {
+			fmt.Println("Usage: shop login <name> <password>")
 			os.Exit(1)
 		}
-		login(os.Args[2])
+		login(os.Args[2], os.Args[3])
 
 	case "register":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: shop register <name>")
+		if len(os.Args) < 4 {
+			fmt.Println("Usage: shop register <name> <password>")
 			os.Exit(1)
 		}
-		register(os.Args[2])
+		register(os.Args[2], os.Args[3])
 
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])

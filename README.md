@@ -14,6 +14,8 @@ A (WIP) RESTful API and CLI client for an RPG shop inventory system, built with 
 - Buy items by index number (stock decreases on purchase, fails if out of stock)
 - Restock items by index with a specified quantity
 - Full REST API with JSON responses
+- Register and log in with a name and password
+- Password hashing using [argon2id](github.com/alexedwards/argon2id)
 
 ## Project Structure:
 ```
@@ -26,6 +28,7 @@ rpg-shop/
 │   └── shop/
 │       └── main.go       # CLI client entry point
 ├── internal/
+│   └── auth/             # user authentication stuff
 │   └── database/         # sqlc generated code
 ├── sql/
 │   ├── queries/          # SQL queries
@@ -67,12 +70,19 @@ psql rpg_shop < sql/seed.sql
      cp .env.example .env
      ```
 
+      ```bash
+      # Generate a secure JWT secret
+      openssl rand -hex 64
       ```
+
+      ```.env
       # If your Postgres user has a password:
       DB_URL=postgres://username:password@localhost/rpg_shop?sslmode=disable
 
       # If no password required:
       DB_URL=postgres://localhost/rpg_shop?sslmode=disable
+
+      JWT_TOKEN=your_jwt_secret
       ```
 
 6. Install dependencies
@@ -92,6 +102,12 @@ In a separate terminal:
 ```bash
 # Browse all items in the shop
 go run ./cmd/shop browse
+
+# Register a new user (starts with 500g)
+go run ./cmd/shop register <name> <password>
+
+# Log in
+go run ./cmd/shop login <name> <password>
 
 # Buy an item by its index number and optional quantity
 go run ./cmd/shop buy 2 5
@@ -113,6 +129,7 @@ go run ./cmd/shop/restock 2 10
 |PATCH|`/items/restock/{id}`|Restock an item|
 |DELETE|`/items/{id}`|Delete an item|
 |POST|`/users`|Register a new user|
+|POST| `/users/login`|Log in to a registered user with name and password|
 |GET|`/users`|Fetch a user by name or list all users if no name provided|
 |GET|`/users/{id}`|Fetch a user by ID|
 
