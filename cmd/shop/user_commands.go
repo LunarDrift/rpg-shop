@@ -47,7 +47,7 @@ func login(name, password string) {
 	cfg := Config{}
 	err = cfg.SetUser(user.ID, user.Name, user.Token)
 	if err != nil {
-		log.Fatal("Could not set user in config:", err)
+		log.Fatal(Red+"Could not set user in config:"+Reset, err)
 	}
 	fmt.Printf("Logged in as "+Bold+Blue+"%s"+Reset+"\n", user.Name)
 }
@@ -63,7 +63,7 @@ func register(name, password string) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal("Could not send request:", err)
+		log.Fatal(Red+"Could not send request:"+Reset, err)
 	}
 	defer resp.Body.Close()
 
@@ -82,7 +82,7 @@ func whoami() {
 
 	resp, err := http.Get(baseURL + "/users/" + cfg.CurrentUserID.String())
 	if err != nil {
-		log.Fatal("Could not reach server:", err)
+		log.Fatal(Red+"Could not reach server:"+Reset, err)
 	}
 	defer resp.Body.Close()
 
@@ -90,4 +90,13 @@ func whoami() {
 	json.NewDecoder(resp.Body).Decode(&user)
 
 	fmt.Printf("Logged in as "+Bold+Blue+"%s"+Reset+" | Balance: "+Yellow+"%dg"+Reset+"\n", user.Name, user.Balance)
+}
+
+func logout() {
+	cfg := Config{}
+	err := write(cfg)
+	if err != nil {
+		log.Fatal(Red+"Could not log out:"+Reset, err)
+	}
+	fmt.Println("Logged out")
 }

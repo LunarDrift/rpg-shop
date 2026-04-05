@@ -70,6 +70,9 @@ func main() {
 	case "whoami":
 		whoami()
 
+	case "logout":
+		logout()
+
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
