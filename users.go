@@ -194,7 +194,7 @@ func (s *Server) handlerEarnGold(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Generate random reward with rand.Intn
-	reward := rand.Intn(90) + 10 // random between 10-100 gold
+	reward := max(10, rand.Intn(100)) // random between 10-100 gold
 
 	// Build UpdateBalanceParams
 	balanceParams := database.UpdateBalanceParams{

@@ -115,6 +115,9 @@ go run ./cmd/shop buy 2 5
 # Show the current user and balance
 go run ./cmd/shop whoami
 
+# Explore and gain money
+go run ./cmd/shop explore
+
 # Restock an item (shopkeeper/admin)
 go run ./cmd/shop/restock 2 10
 
@@ -138,6 +141,7 @@ go run ./cmd/shop logout
 |POST| `/users/login`|Log in to a registered user with name and password|
 |GET|`/users`|Get a user by name or list all users if no name provided|
 |GET|`/users/{id}`|Get a user by ID|
+|PATCH| `users/earn`|Gain a random amount (10-100) of gold|
 
 
 ### Seeding the Database
