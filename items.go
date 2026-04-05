@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/LunarDrift/rpg-shop/internal/auth"
 	"github.com/LunarDrift/rpg-shop/internal/database"
 	"github.com/google/uuid"
 )
@@ -66,14 +65,10 @@ func (s *Server) handlerGetItemByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Missing or invalid token", err)
-		return
-	}
-	userID, err := auth.ValidateJWT(token, s.jwtSecret)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+	// token validation from context
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", err)
 		return
 	}
 
@@ -104,21 +99,17 @@ func (s *Server) handlerDeleteItemByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Missing or invalid token", err)
-		return
-	}
-	userID, err := auth.ValidateJWT(token, s.jwtSecret)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+	// token validation from context
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
 		return
 	}
 
 	var params struct {
 		Quantity int32 `json:"quantity"`
 	}
-	err = json.NewDecoder(r.Body).Decode(&params)
+	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
@@ -190,14 +181,10 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlerRestockItem(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Missing or invalid token", err)
-		return
-	}
-	userID, err := auth.ValidateJWT(token, s.jwtSecret)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+	// token validation from context
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
 		return
 	}
 

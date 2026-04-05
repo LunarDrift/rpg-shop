@@ -31,24 +31,24 @@ func main() {
 	defer db.Close()
 
 	queries := database.New(db)
-	server := NewServer(queries, jwtSecret)
+	s := NewServer(queries, jwtSecret)
 
 	mux := http.NewServeMux()
 
 	// -- Item routes --
 	mux.HandleFunc("GET /health", handlerHealth)
-	mux.HandleFunc("POST /items", server.handlerCreateItem)
-	mux.HandleFunc("GET /items", server.handlerGetItems)
-	mux.HandleFunc("GET /items/{item_id}", server.handlerGetItemByID)
-	mux.HandleFunc("POST /items/buy/{item_id}", server.handlerBuyItem)
-	mux.HandleFunc("PATCH /items/restock/{item_id}", server.handlerRestockItem)
-	mux.HandleFunc("DELETE /items/{item_id}", server.handlerDeleteItemByID)
+	mux.HandleFunc("POST /items", s.handlerCreateItem)
+	mux.HandleFunc("GET /items", s.handlerGetItems)
+	mux.HandleFunc("GET /items/{item_id}", s.handlerGetItemByID)
+	mux.HandleFunc("POST /items/buy/{item_id}", s.middlewareAuth(s.handlerBuyItem))
+	mux.HandleFunc("PATCH /items/restock/{item_id}", s.middlewareAuth(s.handlerRestockItem))
+	mux.HandleFunc("DELETE /items/{item_id}", s.middlewareAuth(s.handlerDeleteItemByID))
 
 	// -- User routes --
-	mux.HandleFunc("POST /users", server.handlerRegisterUser)
-	mux.HandleFunc("POST /users/login", server.handlerLogIn)
-	mux.HandleFunc("GET /users/{id}", server.handlerGetUserByID)
-	mux.HandleFunc("GET /users", server.handlerGetUser)
+	mux.HandleFunc("POST /users", s.handlerRegisterUser)
+	mux.HandleFunc("POST /users/login", s.handlerLogIn)
+	mux.HandleFunc("GET /users/{id}", s.handlerGetUserByID)
+	mux.HandleFunc("GET /users", s.handlerGetUser)
 
 	httpServer := http.Server{
 		Addr:    ":8080",
