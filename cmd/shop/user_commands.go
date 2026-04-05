@@ -76,7 +76,7 @@ func register(name, password string) {
 func whoami() {
 	cfg, err := Read()
 	if err != nil || cfg.Token == "" {
-		fmt.Println("Not logged in. Use 'shop login <name> <password> first")
+		fmt.Println("Not logged in. Use 'shop login <name> <password>' first")
 		return
 	}
 
@@ -99,4 +99,34 @@ func logout() {
 		log.Fatal(Red+"Could not log out:"+Reset, err)
 	}
 	fmt.Println("Logged out")
+}
+
+func explore() {
+	cfg, err := Read()
+	if err != nil || cfg.Token == "" {
+		fmt.Println("Not logged in. Use 'shop login <name> <password>' first")
+		return
+	}
+
+	req, err := http.NewRequest("PATCH", baseURL+"/users/earn", nil)
+	if err != nil {
+		log.Fatal(Red+"Error making request:"+Reset, err)
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(Red+"Could not reach server:"+Reset, err)
+	}
+	defer resp.Body.Close()
+
+	if checkResponseError(resp, "Could not earn gold") {
+		return
+	}
+
+	var user User
+	json.NewDecoder(resp.Body).Decode(&user)
+
+	fmt.Println("You found some items to sell while out exploring...")
+	fmt.Printf("New Balance: "+Yellow+"%dg"+Reset+"\n", user.Balance)
 }

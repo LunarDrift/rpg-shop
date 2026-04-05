@@ -73,6 +73,9 @@ func main() {
 	case "logout":
 		logout()
 
+	case "explore":
+		explore()
+
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
