@@ -50,6 +50,7 @@ func main() {
 	mux.HandleFunc("GET /users/{id}", s.handlerGetUserByID)
 	mux.HandleFunc("GET /users", s.handlerGetUser)
 	mux.HandleFunc("PATCH /users/earn", s.middlewareAuth(s.handlerEarnGold))
+	mux.HandleFunc("GET /users/inventory", s.middlewareAuth(s.handlerGetInventory))
 
 	httpServer := http.Server{
 		Addr:    ":8080",

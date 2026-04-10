@@ -219,3 +219,20 @@ func (s *Server) handlerEarnGold(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, user)
 }
+
+func (s *Server) handlerGetInventory(w http.ResponseWriter, r *http.Request) {
+	// get ID from Context
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
+		return
+	}
+
+	inventoryRow, err := s.db.GetUserInventory(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user inventory", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, inventoryRow)
+}
