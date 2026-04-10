@@ -76,6 +76,9 @@ func main() {
 	case "explore":
 		explore()
 
+	case "inventory":
+		inventory()
+
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 	}
