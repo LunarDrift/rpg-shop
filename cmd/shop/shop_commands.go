@@ -93,6 +93,7 @@ func buyItem(idx string, quantity string) {
 	}
 	json.NewDecoder(resp.Body).Decode(&purchase)
 	fmt.Printf("You purchased "+Bold+Blue+"%dx %s"+Reset+" for "+Yellow+"%dg"+Reset+"\n", qtyInt, purchase.ItemName, purchase.TotalCost)
+	fmt.Printf("Updated balance: "+Yellow+"%dg"+Reset+"\n", purchase.Balance)
 }
 
 func restockItem(idx string, quantity string) {
