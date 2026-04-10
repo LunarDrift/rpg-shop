@@ -11,6 +11,24 @@ import (
 	"github.com/google/uuid"
 )
 
+const addToInventory = `-- name: AddToInventory :exec
+INSERT INTO user_items (user_id, item_id, quantity)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id, item_id)
+DO UPDATE SET quantity = user_items.quantity + EXCLUDED.quantity
+`
+
+type AddToInventoryParams struct {
+	UserID   uuid.UUID
+	ItemID   uuid.UUID
+	Quantity int32
+}
+
+func (q *Queries) AddToInventory(ctx context.Context, arg AddToInventoryParams) error {
+	_, err := q.db.ExecContext(ctx, addToInventory, arg.UserID, arg.ItemID, arg.Quantity)
+	return err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, name, hashed_password, balance, created_at, updated_at)
 VALUES (
@@ -119,6 +137,57 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 	return i, err
 }
 
+const getUserInventory = `-- name: GetUserInventory :many
+SELECT items.name, items.price, user_items.quantity
+FROM user_items
+JOIN items ON items.id = user_items.item_id
+WHERE user_items.user_id = $1
+`
+
+type GetUserInventoryRow struct {
+	Name     string
+	Price    int32
+	Quantity int32
+}
+
+func (q *Queries) GetUserInventory(ctx context.Context, userID uuid.UUID) ([]GetUserInventoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserInventory, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserInventoryRow
+	for rows.Next() {
+		var i GetUserInventoryRow
+		if err := rows.Scan(&i.Name, &i.Price, &i.Quantity); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeFromInventory = `-- name: RemoveFromInventory :exec
+DELETE FROM user_items
+WHERE user_id = $1 AND item_id = $2
+`
+
+type RemoveFromInventoryParams struct {
+	UserID uuid.UUID
+	ItemID uuid.UUID
+}
+
+func (q *Queries) RemoveFromInventory(ctx context.Context, arg RemoveFromInventoryParams) error {
+	_, err := q.db.ExecContext(ctx, removeFromInventory, arg.UserID, arg.ItemID)
+	return err
+}
+
 const updateBalance = `-- name: UpdateBalance :one
 UPDATE users
 SET balance = $2
@@ -143,5 +212,25 @@ func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (U
 		&i.HashedPassword,
 		&i.IsAdmin,
 	)
+	return i, err
+}
+
+const updateInventoryQuantity = `-- name: UpdateInventoryQuantity :one
+UPDATE user_items
+SET quantity = $3
+WHERE user_id = $1 AND item_id = $2
+RETURNING user_id, item_id, quantity
+`
+
+type UpdateInventoryQuantityParams struct {
+	UserID   uuid.UUID
+	ItemID   uuid.UUID
+	Quantity int32
+}
+
+func (q *Queries) UpdateInventoryQuantity(ctx context.Context, arg UpdateInventoryQuantityParams) (UserItem, error) {
+	row := q.db.QueryRowContext(ctx, updateInventoryQuantity, arg.UserID, arg.ItemID, arg.Quantity)
+	var i UserItem
+	err := row.Scan(&i.UserID, &i.ItemID, &i.Quantity)
 	return i, err
 }

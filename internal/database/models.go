@@ -29,3 +29,9 @@ type User struct {
 	HashedPassword string
 	IsAdmin        bool
 }
+
+type UserItem struct {
+	UserID   uuid.UUID
+	ItemID   uuid.UUID
+	Quantity int32
+}
