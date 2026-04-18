@@ -162,7 +162,8 @@ func inventory() {
 	var inventory []InventoryItem
 	json.NewDecoder(resp.Body).Decode(&inventory)
 
+	fmt.Println("Current Inventory:")
 	for i, item := range inventory {
-		fmt.Printf("%d. "+Bold+Blue+"%s"+Reset+"     (qty: %d)  "+Yellow+"%dg"+Reset, i+1, item.Name, item.Quantity, item.Price*item.Quantity)
+		fmt.Printf("%d. "+Bold+Blue+"%s"+Reset+"     (qty: %d)  "+Yellow+"%dg"+Reset+"\n", i+1, item.Name, item.Quantity, item.Price*item.Quantity)
 	}
 }
