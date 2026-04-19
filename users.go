@@ -236,3 +236,94 @@ func (s *Server) handlerGetInventory(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, inventoryRow)
 }
+
+func (s *Server) handlerSellItem(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(userIDKey).(uuid.UUID)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "Could not get user ID", nil)
+		return
+	}
+
+	var params struct {
+		Quantity int32 `json:"quantity"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
+		return
+	}
+
+	itemIDStr := r.PathValue("item_id")
+	itemID, err := uuid.Parse(itemIDStr)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid item ID", err)
+		return
+	}
+
+	userItemParams := database.GetUserAndItemParams{ID: userID, ID_2: itemID}
+	userItemRow, err := s.db.GetUserAndItem(r.Context(), userItemParams)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "User/Item not found", err)
+		return
+	}
+
+	currentItem, err := s.db.GetUserInventoryItem(r.Context(), database.GetUserInventoryItemParams{
+		UserID: userID,
+		ItemID: itemID,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Item not in inventory", err)
+		return
+	}
+
+	if params.Quantity > currentItem.Quantity {
+		respondWithError(w, http.StatusBadRequest, "Not enough in inventory", nil)
+		return
+	}
+
+	updateInventoryParams := database.UpdateInventoryQuantityParams{
+		UserID:   userID,
+		ItemID:   itemID,
+		Quantity: currentItem.Quantity - params.Quantity,
+	}
+	qtyParams := database.UpdateQuantityParams{
+		Quantity: userItemRow.Quantity + params.Quantity,
+		ID:       itemID,
+	}
+	totalPrice := userItemRow.Price * int32(params.Quantity)
+	balanceParams := database.UpdateBalanceParams{
+		ID:      userID,
+		Balance: userItemRow.Balance + totalPrice,
+	}
+
+	updatedInventory, err := s.db.UpdateInventoryQuantity(r.Context(), updateInventoryParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not update inventory", err)
+		return
+	}
+	updatedQty, err := s.db.UpdateQuantity(r.Context(), qtyParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not update item quantity", err)
+		return
+	}
+	updatedBalance, err := s.db.UpdateBalance(r.Context(), balanceParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not update balance", err)
+		return
+	}
+
+	type transactionResponse struct {
+		ItemName          string `json:"item_name"`
+		ShopQuantity      int32  `json:"shop_quantity"`
+		InventoryQuantity int32  `json:"inventory_quantity"`
+		TotalPrice        int32  `json:"total_price"`
+		Balance           int32  `json:"balance"`
+	}
+	respondWithJSON(w, http.StatusOK, transactionResponse{
+		ItemName:          updatedQty.Name,
+		ShopQuantity:      updatedQty.Quantity,
+		InventoryQuantity: updatedInventory.Quantity,
+		TotalPrice:        totalPrice,
+		Balance:           updatedBalance.Balance,
+	})
+}

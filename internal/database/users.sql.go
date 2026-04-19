@@ -138,13 +138,14 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 }
 
 const getUserInventory = `-- name: GetUserInventory :many
-SELECT items.name, items.price, user_items.quantity
+SELECT items.id, items.name, items.price, user_items.quantity
 FROM user_items
 JOIN items ON items.id = user_items.item_id
 WHERE user_items.user_id = $1
 `
 
 type GetUserInventoryRow struct {
+	ID       uuid.UUID
 	Name     string
 	Price    int32
 	Quantity int32
@@ -159,7 +160,12 @@ func (q *Queries) GetUserInventory(ctx context.Context, userID uuid.UUID) ([]Get
 	var items []GetUserInventoryRow
 	for rows.Next() {
 		var i GetUserInventoryRow
-		if err := rows.Scan(&i.Name, &i.Price, &i.Quantity); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Price,
+			&i.Quantity,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -171,6 +177,23 @@ func (q *Queries) GetUserInventory(ctx context.Context, userID uuid.UUID) ([]Get
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUserInventoryItem = `-- name: GetUserInventoryItem :one
+SELECT user_id, item_id, quantity FROM user_items
+WHERE user_id = $1 AND item_id = $2
+`
+
+type GetUserInventoryItemParams struct {
+	UserID uuid.UUID
+	ItemID uuid.UUID
+}
+
+func (q *Queries) GetUserInventoryItem(ctx context.Context, arg GetUserInventoryItemParams) (UserItem, error) {
+	row := q.db.QueryRowContext(ctx, getUserInventoryItem, arg.UserID, arg.ItemID)
+	var i UserItem
+	err := row.Scan(&i.UserID, &i.ItemID, &i.Quantity)
+	return i, err
 }
 
 const removeFromInventory = `-- name: RemoveFromInventory :exec

@@ -28,7 +28,7 @@ SELECT * FROM users
 WHERE name = $1;
 
 -- name: GetUserInventory :many
-SELECT items.name, items.price, user_items.quantity
+SELECT items.id, items.name, items.price, user_items.quantity
 FROM user_items
 JOIN items ON items.id = user_items.item_id
 WHERE user_items.user_id = $1;
@@ -48,3 +48,7 @@ UPDATE user_items
 SET quantity = $3
 WHERE user_id = $1 AND item_id = $2
 RETURNING *;
+
+-- name: GetUserInventoryItem :one
+SELECT * FROM user_items
+WHERE user_id = $1 AND item_id = $2;
