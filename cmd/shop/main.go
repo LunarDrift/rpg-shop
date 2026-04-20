@@ -50,6 +50,17 @@ func main() {
 		}
 		buyItem(os.Args[2], quantity)
 
+	case "sell":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: shop sell <item-id> [quantity]")
+			os.Exit(1)
+		}
+		quantity := "1"
+		if len(os.Args) >= 4 {
+			quantity = os.Args[3]
+		}
+		sellItem(os.Args[2], quantity)
+
 	case "restock":
 		restockItem(os.Args[2], os.Args[3])
 

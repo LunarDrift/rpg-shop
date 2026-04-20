@@ -8,6 +8,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // ----------------------------------------------------------------------------------------------------
@@ -36,7 +38,87 @@ func browseItems() {
 	}
 }
 
-func buyItem(idx string, quantity string) {
+func sellItem(idx, quantity string) {
+	// make sure user is logged in
+	cfg, err := Read()
+	if err != nil || cfg.Token == "" {
+		fmt.Println("Not logged in. Run 'shop login <name> <password>' first")
+		os.Exit(1)
+	}
+
+	// fetch users inventory
+	req, err := http.NewRequest("GET", baseURL+"/users/inventory", nil)
+	if err != nil {
+		log.Fatal(Red+"Error making request:"+Reset, err)
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(Red+"Could not reach server"+Reset, err)
+	}
+	defer resp.Body.Close()
+
+	if checkResponseError(resp, "Could not get inventory") {
+		return
+	}
+
+	type InventoryItem struct {
+		ID       uuid.UUID `json:"id"`
+		Name     string    `json:"name"`
+		Price    int32     `json:"price"`
+		Quantity int32     `json:"quantity"`
+	}
+	var inventory []InventoryItem
+	json.NewDecoder(resp.Body).Decode(&inventory)
+
+	// index bounds check
+	idxInt, err := strconv.Atoi(idx)
+	if err != nil {
+		fmt.Println("Please enter a valid number")
+		os.Exit(1)
+	}
+	if idxInt < 1 || idxInt > len(inventory) {
+		fmt.Println("Invalid item number")
+		os.Exit(1)
+	}
+	qtyInt, err := strconv.Atoi(quantity)
+	if err != nil {
+		fmt.Println("Please enter a valid number")
+		os.Exit(1)
+	}
+
+	// make POST request with the quantity
+	body := strings.NewReader(fmt.Sprintf(`{"quantity": %d}`, qtyInt))
+	req2, err := http.NewRequest("POST", baseURL+"/users/inventory/sell/"+inventory[idxInt-1].ID.String(), body)
+	if err != nil {
+		log.Fatal("Error making request:", err)
+	}
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("Authorization", "Bearer "+cfg.Token)
+	resp2, err := http.DefaultClient.Do(req2)
+	if err != nil {
+		log.Fatal("Could not reach server:", err)
+	}
+	defer resp2.Body.Close()
+
+	fmt.Println("Status:", resp2.StatusCode)
+	if checkResponseError(resp2, "Could not sell item") {
+		return
+	}
+
+	var sale struct {
+		ItemName          string `json:"item_name"`
+		InventoryQuantity int32  `json:"inventory_quantity"`
+		TotalPrice        int32  `json:"total_price"`
+		Balance           int32  `json:"balance"`
+	}
+	json.NewDecoder(resp2.Body).Decode(&sale)
+	fmt.Printf("You sold "+Bold+Blue+"%dx %s"+Reset+" for "+Yellow+"%dg"+Reset+"\n", qtyInt, sale.ItemName, sale.TotalPrice)
+	fmt.Printf("Updated balance: "+Yellow+"%dg"+Reset+"\n", sale.Balance)
+}
+
+func buyItem(idx, quantity string) {
 	// make sure user is logged in
 	cfg, err := Read()
 	if err != nil || cfg.Token == "" {
@@ -96,7 +178,7 @@ func buyItem(idx string, quantity string) {
 	fmt.Printf("Updated balance: "+Yellow+"%dg"+Reset+"\n", purchase.Balance)
 }
 
-func restockItem(idx string, quantity string) {
+func restockItem(idx, quantity string) {
 	cfg, err := Read()
 	if err != nil || cfg.Token == "" {
 		fmt.Println("Not logged in. Run 'shop login <name> <password>' first")
