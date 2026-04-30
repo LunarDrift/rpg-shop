@@ -1,12 +1,22 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/LunarDrift/rpg-shop/internal/database"
 	"github.com/google/uuid"
 )
+
+type PurchaseResult struct {
+	ItemName  string `json:"item_name"`
+	Quantity  int32  `json:"quantity"`
+	TotalCost int32  `json:"total_cost"`
+	Balance   int32  `json:"balance"`
+}
 
 func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 	// token validation from context
@@ -32,73 +42,75 @@ func (s *Server) handlerBuyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userItemParams := database.GetUserAndItemParams{ID: userID, ID_2: itemID}
-	userItemRow, err := s.db.GetUserAndItem(r.Context(), userItemParams)
+	result, err := s.ProcessPurchase(r.Context(), userID, itemID, params.Quantity)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "User/Item not found", err)
-		return
+		respondWithError(w, http.StatusBadRequest, err.Error(), err)
+	}
+
+	respondWithJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) ProcessPurchase(ctx context.Context, userID, itemID uuid.UUID, quantity int32) (PurchaseResult, error) {
+	// Fetch user and item
+	userItemRow, err := s.db.GetUserAndItem(ctx, database.GetUserAndItemParams{ID: userID, ID_2: itemID})
+	if err != nil {
+		return PurchaseResult{}, fmt.Errorf("user/item not found: %w", err)
 	}
 
 	// Quantity checking
 	if userItemRow.Quantity <= 0 {
-		respondWithError(w, http.StatusBadRequest, "Item out of stock", err)
-		return
+		return PurchaseResult{}, errors.New("item out of stock")
 	}
-	if params.Quantity > userItemRow.Quantity {
-		respondWithError(w, http.StatusBadRequest, "Not enough in stock", err)
-		return
+	if quantity > userItemRow.Quantity {
+		return PurchaseResult{}, errors.New("not enough in stock")
 	}
 	// Balance check
-	totalPrice := userItemRow.Price * int32(params.Quantity)
+	totalPrice := userItemRow.Price * quantity
 	if userItemRow.Balance < totalPrice {
-		respondWithError(w, http.StatusBadRequest, "Not enough gold", err)
-		return
+		return PurchaseResult{}, errors.New("not enough gold")
 	}
 
-	// Build param structs for update queries
-	addToInventoryParams := database.AddToInventoryParams{
-		UserID:   userID,
-		ItemID:   itemID,
-		Quantity: params.Quantity,
+	// Transaction for the three db writes
+	tx, err := s.sqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		return PurchaseResult{}, err
 	}
-	qtyParams := database.UpdateQuantityParams{
-		Quantity: userItemRow.Quantity - params.Quantity,
-		ID:       itemID,
-	}
+	defer tx.Rollback()
 
-	balanceParams := database.UpdateBalanceParams{
-		ID:      userID,
-		Balance: userItemRow.Balance - totalPrice,
-	}
+	qtx := s.db.WithTx(tx)
 
 	// Make calls to database
-	// TODO: 3 separate calls to database is bad. Learn how to use transactions so that data stays consistent if anything fails
-	updatedQty, err := s.db.UpdateQuantity(r.Context(), qtyParams)
+	updatedQty, err := qtx.UpdateQuantity(ctx, database.UpdateQuantityParams{
+		Quantity: userItemRow.Quantity - quantity,
+		ID:       itemID,
+	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not update item", err)
-		return
+		return PurchaseResult{}, err
 	}
-	updatedUser, err := s.db.UpdateBalance(r.Context(), balanceParams)
+	updatedUser, err := qtx.UpdateBalance(ctx, database.UpdateBalanceParams{
+		ID:      userID,
+		Balance: userItemRow.Balance - totalPrice,
+	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not update user", err)
-		return
+		return PurchaseResult{}, err
 	}
-	err = s.db.AddToInventory(r.Context(), addToInventoryParams)
+	err = qtx.AddToInventory(ctx, database.AddToInventoryParams{
+		UserID:   userID,
+		ItemID:   itemID,
+		Quantity: quantity,
+	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not update inventory", err)
-		return
+		return PurchaseResult{}, err
 	}
 
-	type purchaseResponse struct {
-		ItemName  string `json:"item_name"`
-		Quantity  int32  `json:"quantity"`
-		TotalCost int32  `json:"total_cost"`
-		Balance   int32  `json:"balance"`
+	if err = tx.Commit(); err != nil {
+		return PurchaseResult{}, err
 	}
-	respondWithJSON(w, http.StatusOK, purchaseResponse{
+
+	return PurchaseResult{
 		ItemName:  updatedQty.Name,
 		Quantity:  updatedQty.Quantity,
 		TotalCost: totalPrice,
 		Balance:   updatedUser.Balance,
-	})
+	}, nil
 }

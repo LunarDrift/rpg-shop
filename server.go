@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -12,12 +13,14 @@ import (
 
 type Server struct {
 	db        *database.Queries
+	sqlDB     *sql.DB
 	jwtSecret string
 }
 
-func NewServer(db *database.Queries, jwtSecret string) *Server {
+func NewServer(db *database.Queries, sqlDB *sql.DB, jwtSecret string) *Server {
 	return &Server{
 		db:        db,
+		sqlDB:     sqlDB,
 		jwtSecret: jwtSecret,
 	}
 }

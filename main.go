@@ -24,14 +24,14 @@ func main() {
 	jwtSecret := os.Getenv("JWT_SECRET")
 
 	// open connection to database
-	db, err := sql.Open("postgres", connStr)
+	sqlDB, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal("Could not connect to database:", err)
 	}
-	defer db.Close()
+	defer sqlDB.Close()
 
-	queries := database.New(db)
-	s := NewServer(queries, jwtSecret)
+	queries := database.New(sqlDB)
+	s := NewServer(queries, sqlDB, jwtSecret)
 
 	mux := http.NewServeMux()
 
